@@ -1,0 +1,115 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local targetPart = nil
+local isLocked = false
+
+-- --- PHẦN 1: TẠO GIAO DIỆN PHONG CÁCH HUB ---
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
+ScreenGui.Name = "BananaAimHub"
+
+-- Main Frame
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 220, 0, 320)
+MainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+
+local UICorner = Instance.new("UICorner", MainFrame)
+UICorner.CornerRadius = UDim.new(0, 10)
+
+-- Header (Thanh tiêu đề màu Vàng Banana)
+local Header = Instance.new("Frame", MainFrame)
+Header.Size = UDim2.new(1, 0, 0, 35)
+Header.BackgroundColor3 = Color3.fromRGB(255, 210, 40)
+Header.BorderSizePixel = 0
+
+local HeaderCorner = Instance.new("UICorner", Header)
+HeaderCorner.CornerRadius = UDim.new(0, 10)
+
+local HeaderText = Instance.new("TextLabel", Header)
+HeaderText.Text = "BANANA HUB | AIM"
+HeaderText.Size = UDim2.new(1, 0, 1, 0)
+HeaderText.BackgroundTransparency = 1
+HeaderText.TextColor3 = Color3.fromRGB(0, 0, 0)
+HeaderText.Font = Enum.Font.GothamBold
+HeaderText.TextSize = 14
+
+-- Scroll List
+local Scroll = Instance.new("ScrollingFrame", MainFrame)
+Scroll.Size = UDim2.new(0.9, 0, 0.75, 0)
+Scroll.Position = UDim2.new(0.05, 0, 0.15, 5)
+Scroll.BackgroundTransparency = 1
+Scroll.ScrollBarThickness = 2
+Scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 210, 40)
+Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+local UIList = Instance.new("UIListLayout", Scroll)
+UIList.Padding = UDim.new(0, 5)
+UIList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- --- PHẦN 2: LOGIC TẠO NÚT (BUTTON) ---
+function createPlayerButton(name, isReset)
+    local Btn = Instance.new("TextButton", Scroll)
+    Btn.Size = UDim2.new(1, -10, 0, 35)
+    Btn.BackgroundColor3 = isReset and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(35, 35, 35)
+    Btn.Text = name
+    Btn.TextColor3 = isReset and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(255, 255, 255)
+    Btn.Font = Enum.Font.Gotham
+    Btn.TextSize = 12
+    Btn.AutoButtonColor = true
+
+    local BtnCorner = Instance.new("UICorner", Btn)
+    BtnCorner.CornerRadius = UDim.new(0, 6)
+
+    -- Hiệu ứng Hover
+    Btn.MouseEnter:Connect(function()
+        TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
+    end)
+    Btn.MouseLeave:Connect(function()
+        TweenService:Create(Btn, TweenInfo.new(0.2), {BackgroundColor3 = isReset and Color3.fromRGB(40, 40, 40) or Color3.fromRGB(35, 35, 35)}):Play()
+    end)
+
+    return Btn
+end
+
+function refreshList()
+    for _, v in pairs(Scroll:GetChildren()) do
+        if v:IsA("TextButton") then v:Destroy() end
+    end
+
+    local UnlockedBtn = createPlayerButton("[!] Tắt Khóa", true)
+    UnlockedBtn.MouseButton1Click:Connect(function()
+        targetPart = nil
+        isLocked = false
+    end)
+
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            local pBtn = createPlayerButton(p.DisplayName, false)
+            pBtn.MouseButton1Click:Connect(function()
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    targetPart = p.Character.HumanoidRootPart
+                    isLocked = true
+                end
+            end)
+        end
+    end
+    Scroll.CanvasSize = UDim2.new(0, 0, 0, UIList.AbsoluteContentSize.Y + 10)
+end
+
+Players.PlayerAdded:Connect(refreshList)
+Players.PlayerRemoving:Connect(refreshList)
+refreshList()
+
+-- --- PHẦN 3: AIM CAMERA LOGIC ---
+RunService.RenderStepped:Connect(function()
+    if isLocked and targetPart and targetPart.Parent then
+        -- Xoay camera mượt mà về phía mục tiêu
+        local lookAt = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+        Camera.CFrame = Camera.CFrame:Lerp(lookAt, 0.15) -- 0.15 là độ mượt, càng thấp càng chậm
+    end
+end)
