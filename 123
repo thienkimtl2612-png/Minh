@@ -1,0 +1,67 @@
+-- Khởi tạo Library đơn giản
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ModernMenu"
+ScreenGui.Parent = game.CoreGui -- Hoặc PlayerGui tùy môi trường
+
+-- 1. Khung chính (Main Frame)
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 450, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25) -- Màu tối sang trọng
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+-- Bo góc cho Khung chính
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12) -- Bo tròn 12px
+MainCorner.Parent = MainFrame
+
+-- 2. Thanh bên (Sidebar)
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.new(0, 120, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = MainFrame
+
+local SidebarCorner = Instance.new("UICorner")
+SidebarCorner.CornerRadius = UDim.new(0, 12)
+SidebarCorner.Parent = Sidebar
+
+-- 3. Phần nội dung (Content)
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, -130, 1, -10)
+ContentFrame.Position = UDim2.new(0, 125, 0, 5)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
+-- 4. Chức năng Đóng/Mở (Toggle)
+local MenuOpen = true
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Insert then -- Phím Insert để đóng mở
+        MenuOpen = not MenuOpen
+        MainFrame.Visible = MenuOpen
+    end
+end)
+
+-- 5. Ví dụ Button bật AimBot trong Tab
+local AimToggle = Instance.new("TextButton")
+AimToggle.Size = UDim2.new(0, 150, 0, 40)
+AimToggle.Position = UDim2.new(0, 10, 0, 50)
+AimToggle.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+AimToggle.Text = "Bật Aim Bot: OFF"
+AimToggle.TextColor3 = Color3.new(1, 1, 1)
+AimToggle.Parent = ContentFrame
+
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 8)
+BtnCorner.Parent = AimToggle
+
+-- Logic bật tắt
+local IsAiming = false
+AimToggle.MouseButton1Click:Connect(function()
+    IsAiming = not IsAiming
+    AimToggle.Text = IsAiming and "Bật Aim Bot: ON" or "Bật Aim Bot: OFF"
+    AimToggle.BackgroundColor3 = IsAiming and Color3.fromRGB(46, 204, 113) or Color3.fromRGB(0, 120, 215)
+end)
