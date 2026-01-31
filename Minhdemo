@@ -1,0 +1,38 @@
+local player = game.Players.LocalPlayer
+local camera = game.Workspace.CurrentCamera
+local runService = game:GetService("RunService")
+
+-- Xóa UI cũ nếu đã tồn tại
+if game.CoreGui:FindFirstChild("BananaMenu") then
+    game.CoreGui.BananaMenu:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "BananaMenu"
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 200, 0, 250)
+MainFrame.Position = UDim2.new(0.5, -100, 0.4, -125)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local CustomIcon = Instance.new("ImageLabel", MainFrame)
+CustomIcon.Size = UDim2.new(0, 80, 0, 80)
+CustomIcon.Position = UDim2.new(0.5, -40, 0, 10)
+CustomIcon.Image = "rbxassetid://138162153507104"
+CustomIcon.BackgroundTransparency = 1
+
+local ModeBtn = Instance.new("TextButton", MainFrame)
+ModeBtn.Size = UDim2.new(0, 160, 0, 40)
+ModeBtn.Position = UDim2.new(0.5, -80, 0, 100)
+ModeBtn.Text = "Target: Players"
+ModeBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+
+-- Nút này giúp bạn kiểm tra xem Script có chạy không
+ModeBtn.MouseButton1Click:Connect(function()
+    print("Script đang hoạt động!")
+    ModeBtn.Text = "Đã bấm!"
+end)
+
+print("Script đã Execute thành công!")
