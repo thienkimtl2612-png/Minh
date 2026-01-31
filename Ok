@@ -1,0 +1,21 @@
+-- Cập nhật phần UI trong script cũ của bạn:
+
+-- [PHẦN ICON TRÊN MENU]
+local Cat = Instance.new("ImageLabel", MainFrame)
+Cat.Size = UDim2.new(0, 100, 0, 100) -- Tăng kích thước lên một chút cho rõ hình
+Cat.Position = UDim2.new(0.5, -50, 0, 10)
+Cat.Image = "rbxassetid://MÃ_ID_CỦA_BẠN" -- Thay dãy số bạn vừa lấy vào đây
+Cat.BackgroundTransparency = 1
+Cat.ScaleType = Enum.ScaleType.Fit -- Giúp hình không bị méo
+
+-- [PHẦN NÚT BẤM TRÒN]
+local CatBtn = Instance.new("ImageButton", ScreenGui)
+CatBtn.Size = UDim2.new(0, 60, 0, 60)
+CatBtn.Position = UDim2.new(0, 15, 0.2, 0)
+CatBtn.Image = "138162153507104" -- Thay dãy số bạn vừa lấy vào đây
+CatBtn.BackgroundColor3 = Color3.new(1, 1, 1) -- Để màu trắng để hiện rõ màu ảnh gốc
+CatBtn.ScaleType = Enum.ScaleType.Fit
+
+-- Thêm bo góc cho nút bấm để nhìn chuyên nghiệp hơn
+local Corner = Instance.new("UICorner", CatBtn)
+Corner.CornerRadius = UDim.new(0, 10)
