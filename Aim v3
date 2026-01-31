@@ -1,0 +1,110 @@
+using UnityEngine;
+
+public class UltimateBananaAim : MonoBehaviour
+{
+    [Header("Aim Config")]
+    public string targetTag = "Enemy";
+    public float aimRange = 100f;
+    public float aimSpeed = 50f; // Tăng lên để aim cực nhanh
+    private Transform currentTarget;
+
+    [Header("UI Settings")]
+    public bool isMenuOpen = true;
+    public Rect windowRect = new Rect(100, 100, 250, 180); // Vị trí và kích cỡ Tab
+    public Texture2D bananaCatIcon; // Kéo ảnh Chuối Mèo vào đây
+
+    private float fps;
+    private GUIStyle headerStyle;
+    private GUIStyle labelStyle;
+
+    void Update()
+    {
+        // Phím tắt để đóng/mở nhanh: Nhấn Insert hoặc Tab
+        if (Input.GetKeyDown(KeyCode.Insert) || Input.GetKeyDown(KeyCode.Tab))
+        {
+            isMenuOpen = !isMenuOpen;
+        }
+
+        // FPS calculation
+        fps = 1.0f / Time.deltaTime;
+
+        // Auto Aim Logic (Fast)
+        FindNearestTarget();
+        if (currentTarget != null)
+        {
+            Vector3 dir = (currentTarget.position + new Vector3(0, 1.5f, 0)) - transform.position;
+            Quaternion targetRot = Quaternion.LookRotation(dir);
+            // Sử dụng Lerp với tốc độ cao để aim dính hơn
+            transform.rotation = Quaternion.Lerp(transform.rotation, targetRot, aimSpeed * Time.deltaTime);
+        }
+    }
+
+    void FindNearestTarget()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag(targetTag);
+        float shortestDistance = Mathf.Infinity;
+        GameObject nearestEnemy = null;
+
+        foreach (GameObject enemy in enemies)
+        {
+            float distance = Vector3.Distance(transform.position, enemy.transform.position);
+            if (distance < shortestDistance && distance <= aimRange)
+            {
+                shortestDistance = distance;
+                nearestEnemy = enemy;
+            }
+        }
+        currentTarget = nearestEnemy != null ? nearestEnemy.transform : null;
+    }
+
+    void OnGUI()
+    {
+        // Chỉ vẽ menu khi isMenuOpen = true
+        if (isMenuOpen)
+        {
+            // GUI.Window cho phép kéo di chuyển (ID là 0)
+            windowRect = GUI.Window(0, windowRect, DrawBananaMenu, "");
+        }
+    }
+
+    // Nội dung bên trong Tab
+    void DrawBananaMenu(int windowID)
+    {
+        // Định dạng chữ
+        headerStyle = new GUIStyle();
+        headerStyle.normal.textColor = Color.yellow;
+        headerStyle.fontStyle = FontStyle.Bold;
+        headerStyle.alignment = TextAnchor.MiddleCenter;
+
+        labelStyle = new GUIStyle();
+        labelStyle.normal.textColor = Color.white;
+
+        // 1. Hình con mèo Banana (Nếu có Texture)
+        if (bananaCatIcon != null)
+        {
+            GUI.DrawTexture(new Rect(95, 5, 60, 60), bananaCatIcon);
+        }
+        else
+        {
+            GUILayout.Label("🍌 CAT MENU 🍌", headerStyle);
+        }
+
+        GUILayout.Space(50); // Cách khoảng để lộ hình con mèo
+
+        // 2. Thông tin FPS
+        GUILayout.Label($"FPS: {fps:F0}", labelStyle);
+
+        // 3. Thông tin Aim
+        string targetName = currentTarget != null ? currentTarget.name : "None";
+        GUILayout.Label($"Target: {targetName}", labelStyle);
+        
+        GUILayout.Space(10);
+        if (GUILayout.Button("Close Menu (Insert)"))
+        {
+            isMenuOpen = false;
+        }
+
+        // Cho phép kéo tab bằng cách click vào vùng trống trong Window
+        GUI.DragWindow(new Rect(0, 0, 10000, 10000));
+    }
+}
