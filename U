@@ -1,0 +1,127 @@
+--[[ 
+    MODERN AIM UI - Giao diện bo góc & Tabs
+    Phím đóng/mở: INSERT
+]]
+
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- 1. CẤU HÌNH (SETTINGS)
+local Config = {
+    AimEnabled = false,
+    TargetPart = "Head", -- "Head" hoặc "HumanoidRootPart"
+    Smoothing = 0.2, -- Độ mượt (0.1 - 1)
+    MenuKey = Enum.KeyCode.Insert,
+    Visible = true
+}
+
+-- 2. KHỞI TẠO GIAO DIỆN (UI)
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainFrame = Instance.new("Frame")
+local UICorner = Instance.new("UICorner")
+local Sidebar = Instance.new("Frame")
+local Content = Instance.new("Frame")
+
+-- Khung chính
+MainFrame.Name = "Main"
+MainFrame.Size = UDim2.new(0, 400, 0, 280)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -140)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+MainFrame.Parent = ScreenGui
+
+UICorner.CornerRadius = UDim.new(0, 15)
+UICorner.Parent = MainFrame
+
+-- Thanh bên (Sidebar)
+Sidebar.Size = UDim2.new(0, 120, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+Sidebar.Parent = MainFrame
+local SideCorner = Instance.new("UICorner")
+SideCorner.CornerRadius = UDim.new(0, 15)
+SideCorner.Parent = Sidebar
+
+-- 3. HÀM TẠO NÚT (COMPONENTS)
+local function CreateButton(text, pos, parent, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 100, 0, 35)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.GothamSemibold
+    btn.TextSize = 12
+    btn.Parent = parent
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 8)
+    btnCorner.Parent = btn
+
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+-- 4. LOGIC TABS & CHỨC NĂNG
+-- Nút bật/tắt AimBot
+local AimBtn = CreateButton("AimBot: OFF", UDim2.new(0, 10, 0, 20), Sidebar, function()
+    Config.AimEnabled = not Config.AimEnabled
+end)
+
+-- Nút đổi mục tiêu (Head/Body)
+local TargetBtn = CreateButton("Target: Head", UDim2.new(0, 10, 0, 65), Sidebar, function()
+    if Config.TargetPart == "Head" then
+        Config.TargetPart = "HumanoidRootPart"
+    else
+        Config.TargetPart = "Head"
+    end
+end)
+
+-- Cập nhật text liên tục
+RunService.RenderStepped:Connect(function()
+    AimBtn.Text = Config.AimEnabled and "AimBot: ON" or "AimBot: OFF"
+    AimBtn.BackgroundColor3 = Config.AimEnabled and Color3.fromRGB(0, 170, 127) or Color3.fromRGB(50, 50, 60)
+    TargetBtn.Text = "Target: " .. (Config.TargetPart == "Head" and "Head" or "Body")
+end)
+
+-- 5. LOGIC AIMBOT (CHỌN MỤC TIÊU GẦN CHUỘT NHẤT)
+local function GetClosestTarget()
+    local nearest = nil
+    local shortestDist = math.huge
+    local mousePos = UserInputService:GetMouseLocation()
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(Config.TargetPart) then
+            local pos, onScreen = Camera:WorldToViewportPoint(player.Character[Config.TargetPart].Position)
+            if onScreen then
+                local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
+                if dist < shortestDist then
+                    nearest = player.Character[Config.TargetPart]
+                    shortestDist = dist
+                end
+            end
+        end
+    end
+    return nearest
+end
+
+RunService.RenderStepped:Connect(function()
+    if Config.AimEnabled then
+        local target = GetClosestTarget()
+        if target then
+            local targetPos = Camera:WorldToViewportPoint(target.Position)
+            local mousePos = UserInputService:GetMouseLocation()
+            -- Di chuyển tâm ngắm (Smoothing)
+            mousemoverel((targetPos.X - mousePos.X) * Config.Smoothing, (targetPos.Y - mousePos.Y) * Config.Smoothing)
+        end
+    end
+end)
+
+-- 6. ĐÓNG MỞ MENU
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Config.MenuKey then
+        Config.Visible = not Config.Visible
+        MainFrame.Visible = Config.Visible
+    end
+end)
