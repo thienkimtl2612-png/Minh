@@ -1,0 +1,100 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+public class AimSystem : MonoBehaviour
+{
+    [Header("Cấu hình Aim")]
+    public string targetTag = "Enemy"; // Gán Tag "Enemy" cho các đối thủ trong Server
+    public float aimRange = 50f;       // Khoảng cách tối đa có thể quét mục tiêu
+    public float smoothSpeed = 10f;
+    private Transform currentTarget;
+
+    [Header("Cấu hình FPS UI")]
+    public float updateInterval = 0.5f;
+    private float accum = 0; 
+    private int frames = 0; 
+    private float timeleft;
+    private string fpsDisplay = "FPS: 0";
+
+    void Start()
+    {
+        timeleft = updateInterval;
+    }
+
+    void Update()
+    {
+        UpdateFPS();
+        FindNearestTarget();
+    }
+
+    void LateUpdate()
+    {
+        if (currentTarget != null)
+        {
+            // Tính toán hướng nhìn về mục tiêu
+            Vector3 dir = currentTarget.position - transform.position;
+            Quaternion targetRot = Quaternion.LookRotation(dir);
+            
+            // Xoay Camera mượt mà
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, smoothSpeed * Time.deltaTime);
+        }
+    }
+
+    // --- Hàm Tìm Mục Tiêu Gần Nhất ---
+    void FindNearestTarget()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag(targetTag);
+        float shortestDistance = Mathf.Infinity;
+        GameObject nearestEnemy = null;
+
+        foreach (GameObject enemy in enemies)
+        {
+            float distanceToEnemy = Vector3.Distance(transform.position, enemy.transform.position);
+            if (distanceToEnemy < shortestDistance && distanceToEnemy <= aimRange)
+            {
+                shortestDistance = distanceToEnemy;
+                nearestEnemy = enemy;
+            }
+        }
+
+        if (nearestEnemy != null)
+            currentTarget = nearestEnemy.transform;
+        else
+            currentTarget = null;
+    }
+
+    // --- Hàm Tính FPS ---
+    void UpdateFPS()
+    {
+        timeleft -= Time.deltaTime;
+        accum += Time.timeScale / Time.deltaTime;
+        ++frames;
+
+        if (timeleft <= 0.0)
+        {
+            float fps = accum / frames;
+            fpsDisplay = string.Format("FPS: {0:F0}", fps);
+            
+            timeleft = updateInterval;
+            accum = 0.0f;
+            frames = 0;
+        }
+    }
+
+    // --- Vẽ UI lên màn hình ---
+    void OnGUI()
+    {
+        // Vẽ FPS ở góc trái trên
+        GUIStyle style = new GUIStyle();
+        style.fontSize = 25;
+        style.normal.textColor = Color.green;
+        GUI.Label(new Rect(10, 10, 200, 50), fpsDisplay, style);
+
+        // Hiện thông báo nếu đang khóa mục tiêu
+        if (currentTarget != null)
+        {
+            style.normal.textColor = Color.red;
+            GUI.Label(new Rect(10, 40, 300, 50), "LOCKED: " + currentTarget.name, style);
+        }
+    }
+}
