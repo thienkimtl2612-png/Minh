@@ -1,0 +1,163 @@
+--[[ 
+    MOBILE AIMBOT UI - VERSION 2.0 (TOUCH OPTIMIZED)
+    Tính năng: Bo góc, Tab hệ thống, Chọn người chơi, Nút đóng mở nổi.
+]]
+
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- 1. CẤU HÌNH
+local Config = {
+    AimEnabled = false,
+    TargetPart = "Head",
+    SpecificTarget = nil,
+    Smoothing = 0.2,
+    Visible = true
+}
+
+-- 2. KHỞI TẠO UI CHÍNH
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "MobileScript"
+
+-- Nút tròn để Đóng/Mở (Dành cho Mobile)
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Size = UDim2.new(0, 50, 0, 50)
+OpenBtn.Position = UDim2.new(0, 10, 0.5, -25)
+OpenBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+OpenBtn.Text = "MENU"
+OpenBtn.TextColor3 = Color3.new(1, 1, 1)
+OpenBtn.Font = Enum.Font.GothamBold
+OpenBtn.TextSize = 10
+OpenBtn.Parent = ScreenGui
+
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(1, 0) -- Làm nút hình tròn
+BtnCorner.Parent = OpenBtn
+
+-- Khung Menu Chính
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 350, 0, 250)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -125)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner", MainFrame)
+MainCorner.CornerRadius = UDim.new(0, 15)
+
+-- Hệ thống Tab (Nằm ngang phía trên cho Mobile dễ bấm)
+local TabBar = Instance.new("Frame")
+TabBar.Size = UDim2.new(1, 0, 0, 40)
+TabBar.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+TabBar.Parent = MainFrame
+Instance.new("UICorner", TabBar).CornerRadius = UDim.new(0, 15)
+
+local PageContainer = Instance.new("Frame")
+PageContainer.Size = UDim2.new(1, 0, 1, -45)
+PageContainer.Position = UDim2.new(0, 0, 0, 45)
+PageContainer.BackgroundTransparency = 1
+PageContainer.Parent = MainFrame
+
+-- Các Pages
+local AimPage = Instance.new("ScrollingFrame", PageContainer)
+AimPage.Size = UDim2.new(1, 0, 1, 0)
+AimPage.BackgroundTransparency = 1
+AimPage.Visible = true
+
+local PlayerPage = Instance.new("ScrollingFrame", PageContainer)
+PlayerPage.Size = UDim2.new(1, 0, 1, 0)
+PlayerPage.BackgroundTransparency = 1
+PlayerPage.Visible = false
+
+-- 3. HÀM TẠO NÚT TAB
+local function CreateTab(name, pos, callback)
+    local t = Instance.new("TextButton")
+    t.Size = UDim2.new(0.5, -5, 1, 0)
+    t.Position = pos
+    t.BackgroundTransparency = 1
+    t.Text = name
+    t.TextColor3 = Color3.new(1, 1, 1)
+    t.Font = Enum.Font.GothamBold
+    t.Parent = TabBar
+    t.MouseButton1Click:Connect(callback)
+end
+
+CreateTab("AIMBOT", UDim2.new(0, 0, 0, 0), function()
+    AimPage.Visible = true
+    PlayerPage.Visible = false
+end)
+
+CreateTab("PLAYERS", UDim2.new(0.5, 0, 0, 0), function()
+    AimPage.Visible = false
+    PlayerPage.Visible = true
+end)
+
+-- 4. NỘI DUNG TAB (Bật/Tắt & Chọn mục tiêu)
+local function CreateToggle(text, pos, parent, callback)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0.9, 0, 0, 40)
+    b.Position = pos
+    b.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+    b.Text = text
+    b.TextColor3 = Color3.new(1, 1, 1)
+    b.Font = Enum.Font.Gotham
+    b.Parent = parent
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 8)
+    b.MouseButton1Click:Connect(callback)
+    return b
+end
+
+local AimToggle = CreateToggle("Aimbot: OFF", UDim2.new(0.05, 0, 0, 10), AimPage, function()
+    Config.AimEnabled = not Config.AimEnabled
+end)
+
+local PartToggle = CreateToggle("Target: Head", UDim2.new(0.05, 0, 0, 60), AimPage, function()
+    Config.TargetPart = (Config.TargetPart == "Head" and "HumanoidRootPart" or "Head")
+end)
+
+-- 5. DANH SÁCH NGƯỜI CHƠI
+local function UpdateList()
+    for _, c in pairs(PlayerPage:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+    local offset = 0
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            CreateToggle(p.Name, UDim2.new(0.05, 0, 0, offset), PlayerPage, function()
+                Config.SpecificTarget = p
+            end)
+            offset = offset + 45
+        end
+    end
+    PlayerPage.CanvasSize = UDim2.new(0, 0, 0, offset)
+end
+Players.PlayerAdded:Connect(UpdateList)
+Players.PlayerRemoving:Connect(UpdateList)
+UpdateList()
+
+-- 6. LOGIC HOẠT ĐỘNG
+RunService.RenderStepped:Connect(function()
+    -- Cập nhật chữ trên nút
+    AimToggle.Text = "Aimbot: " .. (Config.AimEnabled and "ON" or "OFF")
+    AimToggle.BackgroundColor3 = Config.AimEnabled and Color3.fromRGB(0, 170, 127) or Color3.fromRGB(45, 45, 50)
+    PartToggle.Text = "Target: " .. (Config.TargetPart == "Head" and "Head" or "Body")
+
+    if Config.AimEnabled then
+        local target = nil
+        if Config.SpecificTarget and Config.SpecificTarget.Character and Config.SpecificTarget.Character:FindFirstChild(Config.TargetPart) then
+            target = Config.SpecificTarget.Character[Config.TargetPart]
+        end
+        
+        if target then
+            -- Khóa camera (Dành cho Mobile vì mobilemoverel không ổn định)
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        end
+    end
+end)
+
+-- Đóng/Mở Menu khi bấm nút MENU
+OpenBtn.MouseButton1Click:Connect(function()
+    Config.Visible = not Config.Visible
+    MainFrame.Visible = Config.Visible
+end)
