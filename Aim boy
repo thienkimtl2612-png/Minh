@@ -1,0 +1,161 @@
+--[[ 
+    SCRIPT AIM VÀ UI CHO DELTA 
+    ID ẢNH: 138162153507104
+]]
+
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local camera = game.Workspace.CurrentCamera
+local runService = game:GetService("RunService")
+
+-- BIẾN CẤU HÌNH
+local targetMode = "Players" 
+local aimEnabled = true
+local imageID = "rbxassetid://138162153507104"
+
+-- CẤU HÌNH FOV (Vòng tròn vàng)
+local fovCircle = Drawing.new("Circle")
+fovCircle.Visible = true
+fovCircle.Radius = 150
+fovCircle.Color = Color3.fromRGB(255, 255, 0)
+fovCircle.Thickness = 2
+fovCircle.Transparency = 1
+fovCircle.Filled = false
+
+-- TẠO UI MENU
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 200, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -100, 0.4, -150)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true -- Có thể kéo di chuyển
+
+-- Bo góc cho Menu
+local MenuCorner = Instance.new("UICorner", MainFrame)
+MenuCorner.CornerRadius = UDim.new(0, 10)
+
+-- HÌNH ẢNH CỦA BẠN (138162153507104)
+local CustomIcon = Instance.new("ImageLabel", MainFrame)
+CustomIcon.Size = UDim2.new(0, 80, 0, 80)
+CustomIcon.Position = UDim2.new(0.5, -40, 0, 15)
+CustomIcon.Image = imageID
+CustomIcon.BackgroundTransparency = 1
+CustomIcon.ScaleType = Enum.ScaleType.Fit
+
+-- TEXT THÔNG TIN
+local Info = Instance.new("TextLabel", MainFrame)
+Info.Size = UDim2.new(1, 0, 0, 50)
+Info.Position = UDim2.new(0, 0, 0, 100)
+Info.TextColor3 = Color3.new(1, 1, 1)
+Info.BackgroundTransparency = 1
+Info.TextSize = 14
+Info.Text = "FPS: ...\nTarget: None"
+
+-- NÚT CHỌN MỤC TIÊU (PLAYERS / NPCS)
+local ModeBtn = Instance.new("TextButton", MainFrame)
+ModeBtn.Size = UDim2.new(0, 170, 0, 35)
+ModeBtn.Position = UDim2.new(0.5, -85, 0, 160)
+ModeBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+ModeBtn.Text = "Mục tiêu: Players"
+ModeBtn.Font = Enum.Font.SourceSansBold
+ModeBtn.TextSize = 16
+
+local BtnCorner1 = Instance.new("UICorner", ModeBtn)
+
+ModeBtn.MouseButton1Click:Connect(function()
+    if targetMode == "Players" then
+        targetMode = "NPCs"
+    else
+        targetMode = "Players"
+    end
+    ModeBtn.Text = "Mục tiêu: " .. targetMode
+end)
+
+-- NÚT BẬT/TẮT AIM
+local ToggleAim = Instance.new("TextButton", MainFrame)
+ToggleAim.Size = UDim2.new(0, 170, 0, 35)
+ToggleAim.Position = UDim2.new(0.5, -85, 0, 205)
+ToggleAim.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+ToggleAim.Text = "Aim: ĐANG BẬT"
+ToggleAim.Font = Enum.Font.SourceSansBold
+
+local BtnCorner2 = Instance.new("UICorner", ToggleAim)
+
+ToggleAim.MouseButton1Click:Connect(function()
+    aimEnabled = not aimEnabled
+    ToggleAim.Text = aimEnabled and "Aim: ĐANG BẬT" or "Aim: ĐANG TẮT"
+    ToggleAim.BackgroundColor3 = aimEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+end)
+
+-- NÚT CAT TRÒN ĐỂ ĐÓNG MỞ (Dùng ảnh của bạn)
+local CatBtn = Instance.new("ImageButton", ScreenGui)
+CatBtn.Size = UDim2.new(0, 60, 0, 60)
+CatBtn.Position = UDim2.new(0, 15, 0.15, 0)
+CatBtn.Image = imageID
+CatBtn.BackgroundColor3 = Color3.new(1, 1, 1)
+CatBtn.ScaleType = Enum.ScaleType.Fit
+
+local CatCorner = Instance.new("UICorner", CatBtn)
+CatCorner.CornerRadius = UDim.new(1, 0) -- Làm nút tròn
+
+CatBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+    fovCircle.Visible = MainFrame.Visible
+end)
+
+-- HÀM QUÉT MỤC TIÊU
+local function getClosest()
+    local closest = nil
+    local dist = fovCircle.Radius
+    
+    local list = {}
+    if targetMode == "Players" then
+        for _, v in pairs(game.Players:GetPlayers()) do
+            if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid").Health > 0 then
+                table.insert(list, v.Character)
+            end
+        end
+    else
+        for _, v in pairs(game.Workspace:GetDescendants()) do
+            if v:IsA("Model") and v:FindFirstChild("Humanoid") and not game.Players:GetPlayerFromCharacter(v) then
+                if v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+                    table.insert(list, v)
+                end
+            end
+        end
+    end
+
+    for _, char in pairs(list) do
+        local pos, onScreen = camera:WorldToViewportPoint(char.HumanoidRootPart.Position)
+        if onScreen then
+            local mag = (Vector2.new(pos.X, pos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
+            if mag < dist then
+                closest = char.HumanoidRootPart
+                dist = mag
+            end
+        end
+    end
+    return closest
+end
+
+-- VÒNG LẶP RENDER MỖI KHUNG HÌNH
+runService.RenderStepped:Connect(function(dt)
+    local fps = math.floor(1/dt)
+    -- Cập nhật vị trí vòng tròn FOV theo chuột/tâm màn hình
+    fovCircle.Position = Vector2.new(mouse.X, mouse.Y + 36)
+    
+    if aimEnabled then
+        local target = getClosest()
+        if target then
+            Info.Text = "FPS: " .. fps .. "\nNgắm: " .. target.Parent.Name
+            -- Aim mượt mà với Lerp (0.25 là tốc độ)
+            camera.CFrame = camera.CFrame:Lerp(CFrame.new(camera.CFrame.Position, target.Position), 0.25)
+        else
+            Info.Text = "FPS: " .. fps .. "\nNgắm: Trống"
+        end
+    else
+        Info.Text = "FPS: " .. fps .. "\nAim: Đã dừng"
+    end
+end)
