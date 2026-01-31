@@ -1,0 +1,91 @@
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local camera = game.Workspace.CurrentCamera
+local runService = game:GetService("RunService")
+
+-- CẤU HÌNH FOV
+local fovCircle = Drawing.new("Circle")
+fovCircle.Visible = true
+fovCircle.Radius = 150 -- Độ rộng của vòng tròn ngắm
+fovCircle.Color = Color3.fromRGB(255, 255, 0) -- Màu vàng chuối
+fovCircle.Thickness = 2
+fovCircle.Filled = false
+fovCircle.Transparency = 1
+
+-- TẠO UI (TAB CHUỐI MÈO)
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 180, 0, 220)
+MainFrame.Position = UDim2.new(0.5, -90, 0.4, -110)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 2
+MainFrame.Active = true
+MainFrame.Draggable = true -- Di chuyển tab bằng tay
+
+-- HÌNH BANANA CAT
+local CatImage = Instance.new("ImageLabel", MainFrame)
+CatImage.Size = UDim2.new(0, 80, 0, 80)
+CatImage.Position = UDim2.new(0.5, -40, 0, 10)
+CatImage.Image = "rbxassetid://14324151252"
+CatImage.BackgroundTransparency = 1
+
+-- FPS & STATUS LABEL
+local InfoLabel = Instance.new("TextLabel", MainFrame)
+InfoLabel.Size = UDim2.new(1, 0, 0, 60)
+InfoLabel.Position = UDim2.new(0, 0, 0, 100)
+InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+InfoLabel.TextSize = 14
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.Text = "FPS: ...\nTarget: None"
+
+-- NÚT ĐÓNG/MỞ CHO MOBILE
+local ToggleBtn = Instance.new("ImageButton", ScreenGui)
+ToggleBtn.Size = UDim2.new(0, 60, 0, 60)
+ToggleBtn.Position = UDim2.new(0, 10, 0.1, 0)
+ToggleBtn.Image = "rbxassetid://14324151252" -- Nút hình con mèo luôn
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+    fovCircle.Visible = MainFrame.Visible
+end)
+
+-- HÀM TÌM MỤC TIÊU TRONG FOV
+local function getClosestInFOV()
+    local closest = nil
+    local maxDist = fovCircle.Radius
+    
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") and v.Character:FindFirstChild("Humanoid").Health > 0 then
+            local pos, onScreen = camera:WorldToViewportPoint(v.Character.HumanoidRootPart.Position)
+            if onScreen then
+                local mousePos = Vector2.new(mouse.X, mouse.Y)
+                local screenPos = Vector2.new(pos.X, pos.Y)
+                local distToMouse = (screenPos - mousePos).Magnitude
+                
+                if distToMouse < maxDist then
+                    closest = v.Character.HumanoidRootPart
+                    maxDist = distToMouse
+                end
+            end
+        end
+    end
+    return closest
+end
+
+-- VÒNG LẶP CHÍNH
+runService.RenderStepped:Connect(function(dt)
+    -- Cập nhật FPS & FOV Position
+    local fps = math.floor(1/dt)
+    fovCircle.Position = Vector2.new(mouse.X, mouse.Y + 36) -- Khớp với tâm màn hình/chuột
+    
+    -- Aim Logic
+    local target = getClosestInFOV()
+    if target then
+        InfoLabel.Text = "FPS: " .. fps .. "\nTarget: " .. target.Parent.Name
+        -- Aim cực nhanh (Smoothness = 0.2, càng nhỏ càng nhanh)
+        camera.CFrame = camera.CFrame:Lerp(CFrame.new(camera.CFrame.Position, target.Position), 0.25)
+    else
+        InfoLabel.Text = "FPS: " .. fps .. "\nTarget: None"
+    end
+end)
